@@ -49,15 +49,24 @@ export function decryptData(encryptedData, key) {
     }
 
     const bytes = CryptoJS.AES.decrypt(encryptedData, key);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    let decrypted;
+    try {
+      decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    } catch (e) {
+      // Silencing malformed data warnings to clean up console in dev/demo environments
+      return null;
+    }
 
     if (!decrypted) {
       return null;
     }
 
-    return JSON.parse(decrypted);
+    try {
+      return JSON.parse(decrypted);
+    } catch (e) {
+      return null;
+    }
   } catch (error) {
-    console.error('Decryption failed:', error);
     return null;
   }
 }

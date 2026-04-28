@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Bell, MapPin, ShieldCheck, Users, UserPlus, Activity } from 'lucide-react';
+import { ArrowRight, BarChart3, Bell, MapPin, ShieldCheck, Users, UserPlus, Activity, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MOCK_CRISIS_EVENTS, MOCK_VOLUNTEERS } from '../config/mockData';
@@ -47,6 +47,15 @@ export default function AdminHome() {
       color: 'from-amber-500 to-orange-600',
       bgLight: 'bg-amber-50',
       textColor: 'text-amber-600',
+    },
+    {
+      icon: TrendingUp,
+      label: 'Resilience Score',
+      description: 'View AI-computed community readiness and resource gap analysis.',
+      to: '/resilience',
+      color: 'from-emerald-500 to-green-600',
+      bgLight: 'bg-emerald-50',
+      textColor: 'text-emerald-600',
     },
   ];
 

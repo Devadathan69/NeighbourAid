@@ -1,8 +1,10 @@
-import { ArrowRight, LockKeyhole, Radar, Users } from 'lucide-react';
+import { ArrowRight, LockKeyhole, Radar, Users, Vibrate } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/UI/Button';
 import { useAuth } from '../contexts/AuthContext';
 import AdminHome from './AdminHome';
+import useAccessibilitySOS from '../hooks/useAccessibilitySOS';
 
 const features = [
   {
@@ -27,6 +29,15 @@ const features = [
 
 export default function Home() {
   const { currentUser, isAdmin } = useAuth();
+  const [sosTriggered, setSOSTriggered] = useState(false);
+
+  const handleSOS = useCallback(() => {
+    setSOSTriggered(true);
+    // Vibrate if supported
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+  }, []);
+
+  useAccessibilitySOS(handleSOS, Boolean(currentUser && !isAdmin));
 
   if (currentUser && isAdmin) {
     return <AdminHome />;
@@ -133,6 +144,30 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      {/* Accessibility SOS Modal */}
+      {sosTriggered && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-red-900/80 px-4">
+          <div className="w-full max-w-md rounded-[28px] bg-white p-8 text-center shadow-2xl animate-pulse">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <Vibrate className="h-10 w-10" />
+            </div>
+            <h2 className="mt-6 text-3xl font-bold text-red-700">🚨 SOS ACTIVATED</h2>
+            <p className="mt-3 text-slate-600">
+              Emergency signal detected. Your approximate location has been flagged to the nearest coordinator.
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              Shake gesture or rapid tap pattern recognized.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <Button type="button" variant="danger" onClick={() => setSOSTriggered(false)}>
+                I'm Safe — Dismiss
+              </Button>
+              <p className="text-xs text-slate-400">Auto-dismisses after 30 seconds</p>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

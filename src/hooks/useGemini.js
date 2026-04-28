@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getCrisisAnalysis, getVolunteerMatches } from '../services/geminiService';
+import { getCrisisAnalysis, getVolunteerMatches, translateMissionBrief, processVoiceCommand } from '../services/geminiService';
 
 export default function useGemini() {
   const [loading, setLoading] = useState(false);
@@ -33,9 +33,39 @@ export default function useGemini() {
     }
   };
 
+  const translate = async (text, targetLanguage) => {
+    setLoading(true);
+    setError('');
+    try {
+      return await translateMissionBrief(text, targetLanguage);
+    } catch (translateError) {
+      const message = translateError.message || 'Translation failed.';
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const parseVoiceCommand = async (spokenText) => {
+    setLoading(true);
+    setError('');
+    try {
+      return await processVoiceCommand(spokenText);
+    } catch (voiceError) {
+      const message = voiceError.message || 'Voice command processing failed.';
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     analyzeCrisis,
     matchVolunteers,
+    translate,
+    parseVoiceCommand,
     loading,
     error,
   };

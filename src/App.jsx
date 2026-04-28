@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Profile from './pages/Profile';
 import Alerts from './pages/Alerts';
 import AdminSetup from './pages/AdminSetup';
+import ResilienceScore from './pages/ResilienceScore';
 import ManageAdmins from './pages/ManageAdmins';
 import { ToastProvider } from './hooks/useToast';
 import { AuthProvider } from './contexts/AuthContext';
@@ -18,7 +19,7 @@ export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <div className="min-h-screen bg-slate-50 text-slate-800">
             <Navbar />
             <Routes>
@@ -60,6 +61,11 @@ export default function App() {
               <Route path="/alerts" element={
                 <ProtectedRoute requireVolunteer>
                   <Alerts />
+                </ProtectedRoute>
+              } />
+              <Route path="/resilience" element={
+                <ProtectedRoute>
+                  <ResilienceScore />
                 </ProtectedRoute>
               } />
             </Routes>
