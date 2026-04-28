@@ -84,7 +84,4 @@ NeighborAid 2.0 directly supports:
 
 ---
 
-## 👥 Team & Credits
-- **Institution**: [Your University Name]
-- **Team**: [Your Team Name]
-- **Context**: Developed for Google Solutions Challenge 2026.
+
