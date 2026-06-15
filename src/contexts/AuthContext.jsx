@@ -22,6 +22,7 @@ export function AuthProvider({ children }) {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        setLoading(true);
         setCurrentUser(user);
         // Fetch user role from Firestore
         try {

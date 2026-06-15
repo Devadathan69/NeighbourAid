@@ -40,6 +40,16 @@ twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_
 # ─── OSRM Public API Base URL ───────────────────────────────────────────────
 OSRM_BASE = "https://router.project-osrm.org"
 
+# ─── State for Prototype Features (Simulating DB) ───────────────────────────
+active_volunteers = {}  # user_id -> dict with timestamp, coords, etc.
+iot_sensor_data = {}    # basin_id -> dict with latest reading
+global_model_state = {
+    "version": "v2.0.1",
+    "total_samples": 15000,
+    "last_updated": datetime.utcnow().isoformat(),
+    "contributors": 0
+}
+
 # ─── Kerala Flood-Prone River Basins (simulation data) ──────────────────────
 KERALA_RIVER_BASINS = {
     "periyar": {
@@ -101,6 +111,28 @@ class TranslateRequest(BaseModel):
     text: str
     target_language: str  # "ml" for Malayalam, "ta" for Tamil, "hi" for Hindi
 
+class VolunteerHeartbeat(BaseModel):
+    user_id: str
+    name: str
+    lat: float
+    lng: float
+    is_active: bool
+
+class IoTSensorData(BaseModel):
+    sensor_id: str
+    basin_id: str
+    lat: float
+    lng: float
+    water_level_cm: float
+    rainfall_mm: float
+    battery_pct: int
+
+class FederatedWeightSync(BaseModel):
+    user_id: str
+    model_version: str
+    weights_hash: str
+    training_samples: int
+    loss_improvement: float
 
 # ─── Utility Functions ──────────────────────────────────────────────────────
 
@@ -131,17 +163,28 @@ def compute_flood_risk(lat, lng):
         # Proximity factor: closer = higher risk
         proximity_factor = max(0, 1 - (distance / basin["radius_km"]))
 
-        # Simulated dynamic factors (would come from real APIs)
-        # Use time-based seed for consistent but changing values
-        hour_seed = int(time.time() // 3600)
-        random.seed(hash(f"{basin_id}_{hour_seed}"))
+        # Simulated or Real IoT dynamic factors
+        if basin_id in iot_sensor_data:
+            # Use real IoT data
+            latest_reading = iot_sensor_data[basin_id]
+            rainfall_mm = latest_reading["rainfall_mm"]
+            rainfall_factor = min(1.0, rainfall_mm / 200)
+            
+            # Use water level to estimate gauge capacity (assuming 500cm is 100%)
+            avg_capacity = min(100.0, (latest_reading["water_level_cm"] / 500) * 100)
+            gauge_factor = avg_capacity / 100
+        else:
+            # Simulated dynamic factors (would come from real APIs)
+            # Use time-based seed for consistent but changing values
+            hour_seed = int(time.time() // 3600)
+            random.seed(hash(f"{basin_id}_{hour_seed}"))
 
-        rainfall_mm = random.uniform(80, 220)  # mm in last 6 hours
-        rainfall_factor = min(1.0, rainfall_mm / 200)
+            rainfall_mm = random.uniform(80, 220)  # mm in last 6 hours
+            rainfall_factor = min(1.0, rainfall_mm / 200)
 
-        # Average gauge capacity
-        avg_capacity = sum(g["capacity_pct"] for g in basin["gauge_stations"]) / len(basin["gauge_stations"])
-        gauge_factor = min(1.0, avg_capacity / 100)
+            # Average gauge capacity
+            avg_capacity = sum(g["capacity_pct"] for g in basin["gauge_stations"]) / len(basin["gauge_stations"])
+            gauge_factor = min(1.0, avg_capacity / 100)
 
         # Combined risk score
         risk_score = (
@@ -581,3 +624,120 @@ async def compute_resilience_score(payload: FloodDataRequest):
         "location": {"lat": payload.lat, "lng": payload.lng},
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+# ─── NEW PROTOTYPE FEATURES ENDPOINTS ───────────────────────────────────────
+
+@app.post("/api/volunteer/heartbeat")
+async def update_volunteer_heartbeat(payload: VolunteerHeartbeat):
+    """
+    Real-Time Availability Check:
+    Receives real-time GPS coords from volunteers who have toggled "Active".
+    """
+    if payload.is_active:
+        active_volunteers[payload.user_id] = {
+            "user_id": payload.user_id,
+            "name": payload.name,
+            "lat": payload.lat,
+            "lng": payload.lng,
+            "last_seen": datetime.utcnow().isoformat(),
+            "timestamp": time.time()
+        }
+    else:
+        active_volunteers.pop(payload.user_id, None)
+        
+    return {"status": "success", "active_count": len(active_volunteers)}
+
+@app.get("/api/volunteers/active")
+async def get_active_volunteers():
+    """
+    Returns volunteers who have pinged within the last 15 minutes.
+    """
+    now = time.time()
+    # Filter out stale heartbeats (older than 15 mins)
+    stale_threshold = 15 * 60 
+    
+    active = []
+    keys_to_remove = []
+    
+    for uid, data in active_volunteers.items():
+        if now - data["timestamp"] > stale_threshold:
+            keys_to_remove.append(uid)
+        else:
+            active.append(data)
+            
+    for uid in keys_to_remove:
+        del active_volunteers[uid]
+        
+    return {"active_volunteers": active, "count": len(active)}
+
+@app.post("/api/iot/ingest")
+async def ingest_iot_data(payload: IoTSensorData):
+    """
+    IoT Integration:
+    Simulated ingestion endpoint for hardware sensors (water level, rainfall).
+    """
+    iot_sensor_data[payload.basin_id] = {
+        "sensor_id": payload.sensor_id,
+        "lat": payload.lat,
+        "lng": payload.lng,
+        "water_level_cm": payload.water_level_cm,
+        "rainfall_mm": payload.rainfall_mm,
+        "battery_pct": payload.battery_pct,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    return {"status": "success", "basin_id": payload.basin_id}
+
+@app.get("/api/drones/active")
+async def get_active_drones():
+    """
+    Drone-Based Visual Feeds:
+    Returns a list of currently active drone mappings for the admin map.
+    """
+    # Simulated drones
+    drones = [
+        {
+            "drone_id": "DRN-881",
+            "lat": 10.0559,
+            "lng": 76.6497,
+            "status": "mapping",
+            "battery": 82,
+            "stream_url": "https://www.w3schools.com/html/mov_bbb.mp4" # Dummy video
+        },
+        {
+            "drone_id": "DRN-402",
+            "lat": 9.9900,
+            "lng": 76.5800,
+            "status": "patrolling",
+            "battery": 45,
+            "stream_url": "https://www.w3schools.com/html/mov_bbb.mp4"
+        }
+    ]
+    return {"drones": drones}
+
+@app.post("/api/fl/sync-weights")
+async def sync_fl_weights(payload: FederatedWeightSync):
+    """
+    Federated Learning:
+    Receives local model updates from edge devices and updates the global state.
+    """
+    global global_model_state
+    global_model_state["contributors"] += 1
+    global_model_state["total_samples"] += payload.training_samples
+    global_model_state["last_updated"] = datetime.utcnow().isoformat()
+    
+    # Simulate a minor version bump every 10 contributors
+    if global_model_state["contributors"] % 10 == 0:
+        parts = global_model_state["version"].split(".")
+        minor = int(parts[-1]) + 1
+        global_model_state["version"] = f"v2.0.{minor}"
+        
+    return {"status": "success", "global_state": global_model_state}
+
+@app.get("/api/fl/global-model")
+async def get_fl_global_model():
+    """
+    Federated Learning:
+    Returns the latest global model metadata for edge devices to download.
+    """
+    return {"global_model": global_model_state}

@@ -1,0 +1,14 @@
+{
+  "name": "neighbor-aid-sdk",
+  "version": "2.0.0",
+  "description": "JS SDK for NeighborAid Crisis Response System",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "NeighborAid",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

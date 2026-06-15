@@ -1,4 +1,4 @@
-import { ArrowRight, LockKeyhole, Radar, Users, Vibrate } from 'lucide-react';
+import { ArrowRight, LockKeyhole, Radar, Users, Vibrate, Terminal, Code2 } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/UI/Button';
@@ -142,6 +142,63 @@ export default function Home() {
               </article>
             );
           })}
+        </div>
+      </section>
+
+      {/* Open Source SDK Section */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-navy p-8 shadow-2xl sm:p-12">
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary-500/20 blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl" />
+          
+          <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
+            <div>
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
+                <Code2 className="h-4 w-4 text-white" /> Open Source
+              </span>
+              <h2 className="text-3xl font-bold text-white sm:text-4xl">
+                NeighborAid SDK
+              </h2>
+              <p className="mt-4 text-lg leading-relaxed text-white/80">
+                Disasters don't respect borders. We've open-sourced our core routing, crisis detection, and IoT ingestion engines so developers in any region can build their own local response networks.
+              </p>
+              
+              <div className="mt-8 flex flex-wrap gap-4">
+                <button className="rounded-2xl bg-white/10 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20 backdrop-blur">
+                  View Documentation
+                </button>
+                <button className="rounded-2xl border border-white/20 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                  GitHub Repository
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-white/10 bg-[#0A101D] p-5 shadow-inner">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium text-white/60">
+                    <Terminal className="h-4 w-4" /> Python
+                  </div>
+                  <span className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/80">v2.0.0</span>
+                </div>
+                <code className="block font-mono text-sm text-green-400">
+                  pip install neighbor_aid
+                </code>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-[#0A101D] p-5 shadow-inner">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium text-white/60">
+                    <Terminal className="h-4 w-4" /> Node.js
+                  </div>
+                  <span className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/80">v2.0.0</span>
+                </div>
+                <code className="block font-mono text-sm text-sky-400">
+                  npm install @neighboraid/sdk
+                </code>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

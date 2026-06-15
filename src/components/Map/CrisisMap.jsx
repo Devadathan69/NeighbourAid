@@ -2,8 +2,15 @@ import { useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, Circle, Polyline, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MOCK_VOLUNTEERS } from '../../config/mockData';
+import L from 'leaflet';
 
-export default function CrisisMap({ crises = [], volunteers = [], selectedCrisis = null, floodData = null }) {
+const droneIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/2833/2833800.png', // Temporary drone icon URL
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+});
+
+export default function CrisisMap({ crises = [], volunteers = [], selectedCrisis = null, floodData = null, drones = [], onDroneClick = null }) {
   const visibleVolunteers = volunteers.length > 0 ? volunteers : MOCK_VOLUNTEERS;
   const activeCrisisCount = crises.filter((c) => c.status === 'active').length;
 
@@ -11,6 +18,9 @@ export default function CrisisMap({ crises = [], volunteers = [], selectedCrisis
     const parts = [`${activeCrisisCount} active alerts`, `${visibleVolunteers.length} nearby responders`];
     if (floodData?.risks?.length > 0) {
       parts.push(`${floodData.risks.length} flood basin${floodData.risks.length > 1 ? 's' : ''} monitored`);
+    }
+    if (drones.length > 0) {
+      parts.push(`${drones.length} active drone${drones.length > 1 ? 's' : ''}`);
     }
     return parts.join(' · ');
   }, [activeCrisisCount, visibleVolunteers.length, floodData]);
@@ -121,6 +131,33 @@ export default function CrisisMap({ crises = [], volunteers = [], selectedCrisis
             </CircleMarker>
           );
         })}
+
+        {/* Draw Drones */}
+        {drones.map((drone) => (
+          <CircleMarker
+            key={drone.drone_id}
+            center={[drone.lat, drone.lng]}
+            radius={8}
+            pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#06b6d4', fillOpacity: 1 }}
+            eventHandlers={{
+              click: () => {
+                if (onDroneClick) onDroneClick(drone);
+              },
+            }}
+          >
+            <Popup>
+              <strong>🚁 {drone.drone_id}</strong><br />
+              Status: {drone.status}<br />
+              Battery: {drone.battery}%<br />
+              <button 
+                onClick={(e) => { e.stopPropagation(); if (onDroneClick) onDroneClick(drone); }}
+                className="mt-2 text-xs font-bold text-cyan-600 hover:text-cyan-800"
+              >
+                View Live Feed
+              </button>
+            </Popup>
+          </CircleMarker>
+        ))}
       </MapContainer>
 
       <div className="absolute left-6 top-6 rounded-2xl bg-white/95 px-4 py-3 shadow-card z-[1000]">

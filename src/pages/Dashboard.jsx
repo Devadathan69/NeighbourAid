@@ -11,6 +11,8 @@ import useGemini from '../hooks/useGemini';
 import { useToast } from '../hooks/useToast';
 import { activateBreakGlass } from '../services/firebaseService';
 import { getFloodRiskData, detectCrisis } from '../services/floodService';
+import { getActiveDrones, getActiveVolunteers } from '../services/prototypeService';
+import DroneFeedModal from '../components/UI/DroneFeedModal';
 
 function timeAgo(dateString) {
   const diffMinutes = Math.max(1, Math.round((Date.now() - new Date(dateString).getTime()) / 60000));
@@ -48,6 +50,11 @@ export default function Dashboard() {
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [voiceResult, setVoiceResult] = useState(null);
 
+  // Prototype Features State
+  const [drones, setDrones] = useState([]);
+  const [activeVolunteers, setActiveVolunteers] = useState([]);
+  const [selectedDrone, setSelectedDrone] = useState(null);
+
   const selectedCrisis = useMemo(
     () => MOCK_CRISIS_EVENTS.find((c) => c.id === selectedCrisisId) || MOCK_CRISIS_EVENTS[0],
     [selectedCrisisId],
@@ -76,8 +83,22 @@ export default function Dashboard() {
       } catch (e) { console.error(e); }
       finally { setFloodLoading(false); }
     }
+    async function loadPrototypeData() {
+      try {
+        const droneData = await getActiveDrones();
+        setDrones(droneData.drones || []);
+        
+        const volunteerData = await getActiveVolunteers();
+        setActiveVolunteers(volunteerData.active_volunteers || []);
+      } catch (e) { console.error(e); }
+    }
+    
     loadFlood();
-    const interval = setInterval(loadFlood, 120000);
+    loadPrototypeData();
+    const interval = setInterval(() => {
+      loadFlood();
+      loadPrototypeData();
+    }, 15000); // 15 seconds for prototype to look real-time
     return () => clearInterval(interval);
   }, []);
 
@@ -363,10 +384,21 @@ export default function Dashboard() {
           )}
 
           <div className="h-[620px]">
-            <CrisisMap crises={MOCK_CRISIS_EVENTS} volunteers={MOCK_VOLUNTEERS} selectedCrisis={selectedCrisis} floodData={floodData} />
+            <CrisisMap 
+              crises={MOCK_CRISIS_EVENTS} 
+              volunteers={activeVolunteers.length > 0 ? activeVolunteers : MOCK_VOLUNTEERS} 
+              selectedCrisis={selectedCrisis} 
+              floodData={floodData} 
+              drones={drones}
+              onDroneClick={setSelectedDrone}
+            />
           </div>
         </section>
       </div>
+
+      {selectedDrone && (
+        <DroneFeedModal drone={selectedDrone} onClose={() => setSelectedDrone(null)} />
+      )}
 
       {/* Break-Glass Confirmation Modal */}
       {confirmOpen && selectedCrisis && (

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import { loginUser } from '../services/firebaseService';
 import { useToast } from '../hooks/useToast';
 import Button from '../components/UI/Button';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -12,8 +13,21 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
+  const { currentUser, loading: authLoading, isAdmin } = useAuth();
 
   const from = location.state?.from?.pathname || '/';
+
+  useEffect(() => {
+    if (currentUser && !authLoading) {
+      if (isAdmin && from === '/') {
+        navigate('/dashboard', { replace: true });
+      } else if (from === '/') {
+        navigate('/profile', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
+    }
+  }, [currentUser, authLoading, isAdmin, navigate, from]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,10 +40,8 @@ export default function Login() {
     try {
       await loginUser(email, password);
       showToast('Logged in successfully', 'success');
-      navigate(from, { replace: true });
     } catch (error) {
       showToast(error.message || 'Failed to log in', 'error');
-    } finally {
       setLoading(false);
     }
   };
